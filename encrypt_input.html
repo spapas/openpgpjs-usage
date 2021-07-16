@@ -1,0 +1,79 @@
+<html>
+
+<body>
+    Hello!
+
+    <br />Message: <input type='file' id='message'> <br /> Public key: <input type='file' id='public_key'> <br />
+
+    <button onclick=encrypt()>Encrypt!</button>
+
+</body>
+<script src='https://unpkg.com/openpgp@5.0.0-3/dist/openpgp.min.js'></script>
+<script>
+    var message = '';
+    var public_key = '';
+
+    const loadPK = (async(key_data) => {
+        publicKey = await openpgp.readKey({
+            armoredKey: key_data
+        });
+        console.log("PUBLIC KEY LOADED")
+    })
+
+
+
+    document.getElementById('public_key').addEventListener("change", function() {
+        if (this.files && this.files[0]) {
+            var myFile = this.files[0];
+            var reader = new FileReader();
+
+            reader.addEventListener('load', function(e) {
+                loadPK(e.target.result)
+            });
+
+            reader.readAsText(myFile);
+        }
+    });
+
+    document.getElementById('message').addEventListener("change", function() {
+        if (this.files && this.files[0]) {
+            var myFile = this.files[0];
+            var reader = new FileReader();
+
+            reader.addEventListener('load', function(e) {
+                message = e.target.result
+                console.log("MESSAGE LOADED", message)
+            });
+
+            reader.readAsText(myFile);
+        }
+    });
+
+    function download(filename, text) {
+        var element = document.createElement('a');
+        element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
+        element.setAttribute('download', filename);
+
+        element.style.display = 'none';
+        document.body.appendChild(element);
+
+        element.click();
+
+        document.body.removeChild(element);
+    }
+
+    const encrypt = (async() => {
+        const encrypted = await openpgp.encrypt({
+            message: await openpgp.createMessage({
+                text: message
+            }),
+            encryptionKeys: publicKey
+        })
+        console.log("Encrypt OK!")
+        console.log(encrypted)
+        download('cipher.txt', encrypted)
+
+    })
+</script>
+
+</html>
