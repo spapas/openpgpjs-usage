@@ -1,0 +1,71 @@
+<html>
+
+<body>
+    Hello!
+    <br /> Cipher: <input type='file' id='cipher'> <br /> Secret: <input type='file' id='secret'> <br />
+    <input id='passphrase' type='password'>
+
+    <button onclick=decrypt()>Decrypt!</button>
+
+</body>
+<script src='https://unpkg.com/openpgp@5.0.0-3/dist/openpgp.min.js'></script>
+<script>
+    document.getElementById('secret').addEventListener("change", function() {
+        console.log("Z")
+        if (this.files && this.files[0]) {
+            console.log("ZZ")
+            var myFile = this.files[0];
+            var reader = new FileReader();
+
+            reader.addEventListener('load', function(e) {
+                output.textContent = e.target.result;
+            });
+
+            reader.readAsBinaryString(myFile);
+        }
+    });
+
+    const decrypt = (async() => {
+        const secret_data = await fetch('/test2-secret.asc').then(response => response.text()).then(secret_data => secret_data)
+        console.log("SECRET LOADED")
+
+        const privateKey = await openpgp.decryptKey({
+            privateKey: await openpgp.readPrivateKey({
+                armoredKey: secret_data
+            }),
+            passphrase: document.getElementById('passphrase').value
+        });
+        console.log("PRIVATE KEY LOADED")
+
+        // For binary
+        const encryptedData = await fetch('/test.txt.gpg').then(response => response.arrayBuffer()).then(data => data)
+            // For armored text
+            //const encryptedData = await fetch('/test.txt.gpg').then(response => response.text()).then(data => data)
+        console.log(encryptedData)
+
+        const encryptedMessage = await openpgp.readMessage({
+                binaryMessage: new Uint8Array(encryptedData)
+            })
+            // Armored 
+            /* 
+            const encryptedMessage = await openpgp.readMessage({
+                armoredMessage: encryptedData
+            })
+            */
+
+        console.log(encryptedData)
+        console.log(encryptedMessage)
+
+        const {
+            data: decrypted,
+            signatures
+        } = await openpgp.decrypt({
+            message: encryptedMessage,
+            decryptionKeys: privateKey
+        })
+        console.log(decrypted)
+
+    })
+</script>
+
+</html>

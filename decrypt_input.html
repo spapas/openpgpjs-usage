@@ -1,0 +1,74 @@
+<html>
+
+<body>
+    Hello!
+    <br />Passphrase: <input id='passphrase' type='password'>
+    <br />Cipher: <input type='file' id='cipher'> <br /> Secret: <input type='file' id='secret'> <br />
+
+    <button onclick=decrypt()>Decrypt!</button>
+
+</body>
+<script src='https://unpkg.com/openpgp@5.0.0-3/dist/openpgp.min.js'></script>
+<script>
+    var cipher = '';
+    var secret = '';
+    let privateKey = undefined;
+    let encryptedMessage = undefined;
+
+    const loadSecret = (async(secret_data) => {
+        privateKey = await openpgp.decryptKey({
+            privateKey: await openpgp.readPrivateKey({
+                armoredKey: secret_data
+            }),
+            passphrase: document.getElementById('passphrase').value
+        });
+        console.log("PRIVATE KEY LOADED")
+    })
+
+    const loadCipher = (async(cipher_data) => {
+        encryptedMessage = await openpgp.readMessage({
+            binaryMessage: new Uint8Array(cipher_data)
+        })
+        console.log("CIPHER LOADED")
+    })
+
+    document.getElementById('secret').addEventListener("change", function() {
+        if (this.files && this.files[0]) {
+            var myFile = this.files[0];
+            var reader = new FileReader();
+
+            reader.addEventListener('load', function(e) {
+                loadSecret(e.target.result)
+            });
+
+            reader.readAsText(myFile);
+        }
+    });
+
+    document.getElementById('cipher').addEventListener("change", function() {
+        if (this.files && this.files[0]) {
+            var myFile = this.files[0];
+            var reader = new FileReader();
+
+            reader.addEventListener('load', function(e) {
+                loadCipher(e.target.result)
+            });
+
+            reader.readAsArrayBuffer(myFile);
+        }
+    });
+
+    const decrypt = (async() => {
+        const {
+            data: decrypted,
+            signatures
+        } = await openpgp.decrypt({
+            message: encryptedMessage,
+            decryptionKeys: privateKey
+        })
+        console.log("Decrypt OK!")
+        console.log(decrypted)
+    })
+</script>
+
+</html>
